@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -7,6 +7,12 @@ export default function Home() {
       <p className="text-lg text-gray-600">
         Hola mundo. Aquí vivirá la mesa de regalos.
       </p>
+      <Link
+        href="/login"
+        className="rounded-lg bg-pink-600 px-4 py-2 font-medium text-white hover:bg-pink-700"
+      >
+        Entrar como anfitrión
+      </Link>
     </main>
   );
 }
