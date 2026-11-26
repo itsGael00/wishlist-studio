@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
@@ -83,4 +84,25 @@ export async function updateEvent(
   if (!data || data.length === 0) return { error: "No encontramos ese evento." };
 
   return { message: "Cambios guardados ✅" };
+}
+
+// Genera un código de acceso nuevo. El anterior deja de servir al instante.
+// Todo lo hace la función regenerate_access_code() de la base de datos
+// (migración 0003): crea el código, sube la versión y revisa que seas el dueño.
+export async function regenerateAccessCode(eventId: string) {
+  if (!z.uuid().safeParse(eventId).success) return;
+
+  const { supabase } = await requireUser();
+  await supabase.rpc("regenerate_access_code", { p_event_id: eventId });
+  refresh();
+}
+
+// Borra el evento y TODO lo que cuelga de él: configuración, regalos,
+// apartados y confirmaciones (on delete cascade en la base de datos).
+export async function deleteEvent(eventId: string) {
+  if (!z.uuid().safeParse(eventId).success) return;
+
+  const { supabase } = await requireUser();
+  await supabase.from("events").delete().eq("id", eventId);
+  redirect("/panel");
 }
