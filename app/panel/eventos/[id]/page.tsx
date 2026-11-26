@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
@@ -13,9 +12,6 @@ export const metadata: Metadata = { title: "Editar evento · WishListStudio" };
 export default function EditEventPage({ params }: PageProps<"/panel/eventos/[id]">) {
   return (
     <main className="flex flex-col gap-6">
-      <Link href="/panel" className="text-sm underline">
-        ← Mis eventos
-      </Link>
       <Suspense fallback={<p className="text-gray-500">Cargando evento…</p>}>
         <EditEvent params={params} />
       </Suspense>
