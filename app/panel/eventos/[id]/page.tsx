@@ -3,11 +3,14 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
+import { formatearCodigo } from "@/lib/codigo";
 import { isoToLocalInput } from "@/lib/fechas";
-import { updateEvent } from "../actions";
+import { getOrigin } from "@/lib/sitio";
+import { regenerateAccessCode, updateEvent } from "../actions";
 import { EventForm } from "../event-form";
+import { ShareBox } from "./share-box";
 
-export const metadata: Metadata = { title: "Editar evento · WishListStudio" };
+export const metadata: Metadata = { title: "Evento · WishListStudio" };
 
 export default function EditEventPage({ params }: PageProps<"/panel/eventos/[id]">) {
   return (
@@ -27,15 +30,24 @@ async function EditEvent({ params }: { params: Promise<{ id: string }> }) {
   // Si el evento es de otra persona, RLS hace que no regrese nada → 404.
   const { data: event } = await supabase
     .from("events")
-    .select("id, title, description, location_text, starts_at")
+    .select("id, title, description, location_text, starts_at, invite_token, access_code")
     .eq("id", id)
     .maybeSingle();
 
   if (!event) notFound();
 
+  const origin = await getOrigin();
+
   return (
     <>
-      <h1 className="text-2xl font-bold">Editar evento</h1>
+      <h1 className="text-2xl font-bold">{event.title}</h1>
+      <ShareBox
+        link={`${origin}/e/${event.invite_token}`}
+        code={formatearCodigo(event.access_code)}
+        eventTitle={event.title}
+        regenerate={regenerateAccessCode.bind(null, event.id)}
+      />
+      <h2 className="text-xl font-semibold">Datos del evento</h2>
       <EventForm
         action={updateEvent.bind(null, event.id)}
         submitLabel="Guardar cambios"
