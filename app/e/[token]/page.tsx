@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { formatearFecha } from "@/lib/fechas";
-import { formatearPrecio } from "@/lib/precios";
-import { isInviteToken, loadGuestPage, readGuestToken, type GuestGift } from "@/lib/invitado";
-import { submitAccessCode } from "./actions";
+import { isInviteToken, loadGuestPage, readGuestToken } from "@/lib/invitado";
+import { cancel, reserve, submitAccessCode, submitRsvp } from "./actions";
 import { CodeForm } from "./code-form";
+import { GiftCard } from "./gift-card";
+import { RsvpForm } from "./rsvp-form";
 
 // El título NO lleva el nombre del evento: sin código no se revela nada
 // (RN-06b), ni siquiera en la pestaña o en la vista previa de WhatsApp.
@@ -48,7 +49,10 @@ async function Guest({ params }: { params: Promise<{ token: string }> }) {
     );
   }
 
-  const { event, settings, gifts } = page;
+  const { event, settings, gifts, my_rsvp } = page;
+  // Para no hacerle escribir su nombre cada vez.
+  const defaultName = my_rsvp?.guest_name ?? page.my_name ?? "";
+  const available = gifts.filter((g) => !g.reserved).length;
 
   return (
     <>
@@ -69,14 +73,38 @@ async function Guest({ params }: { params: Promise<{ token: string }> }) {
         </p>
       )}
 
+      <section className="flex flex-col gap-3 rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+        <h2 className="text-xl font-semibold">Confirma tu asistencia</h2>
+        <RsvpForm
+          action={submitRsvp.bind(null, token)}
+          current={my_rsvp}
+          defaultName={defaultName}
+          allowCompanions={settings.allow_companions}
+          maxCompanions={settings.max_companions ?? 0}
+        />
+      </section>
+
       <section className="flex flex-col gap-3">
-        <h2 className="text-xl font-semibold">Mesa de regalos</h2>
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-xl font-semibold">Mesa de regalos</h2>
+          {gifts.length > 0 && (
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {available} de {gifts.length} disponibles
+            </span>
+          )}
+        </div>
         {gifts.length === 0 ? (
           <p className="text-gray-600 dark:text-gray-400">Todavía no hay regalos en la lista.</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {gifts.map((gift) => (
-              <GiftItem key={gift.id} gift={gift} />
+              <GiftCard
+                key={gift.id}
+                gift={gift}
+                defaultName={defaultName}
+                reserve={reserve.bind(null, token, gift.id)}
+                cancel={cancel.bind(null, token, gift.id)}
+              />
             ))}
           </ul>
         )}
@@ -85,38 +113,3 @@ async function Guest({ params }: { params: Promise<{ token: string }> }) {
   );
 }
 
-function GiftItem({ gift }: { gift: GuestGift }) {
-  return (
-    <li className="flex flex-col gap-2 rounded-lg border border-gray-200 p-4 dark:border-gray-800">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-semibold break-words">{gift.name}</p>
-          {gift.price_estimate !== null && (
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Aprox. {formatearPrecio(gift.price_estimate)}
-            </p>
-          )}
-        </div>
-        <span
-          className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${
-            gift.mine
-              ? "bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300"
-              : gift.reserved
-                ? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                : "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300"
-          }`}
-        >
-          {gift.mine ? "Lo apartaste tú" : gift.reserved ? "Ya apartado" : "Disponible"}
-        </span>
-      </div>
-      {gift.description && (
-        <p className="text-sm break-words whitespace-pre-line">{gift.description}</p>
-      )}
-      {gift.store_url && (
-        <a href={gift.store_url} target="_blank" rel="noopener noreferrer" className="text-sm underline">
-          Ver en tienda
-        </a>
-      )}
-    </li>
-  );
-}
