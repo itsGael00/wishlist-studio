@@ -13,6 +13,7 @@ export function EventTabs() {
   const tabs = [
     { href: base, label: "Evento" },
     { href: `${base}/regalos`, label: "Regalos" },
+    { href: `${base}/asistencia`, label: "Asistencia" },
     { href: `${base}/configuracion`, label: "Configuración" },
   ];
 

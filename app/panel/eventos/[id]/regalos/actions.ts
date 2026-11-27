@@ -152,3 +152,14 @@ export async function moveGift(eventId: string, giftId: string, direction: "up" 
   );
   refresh();
 }
+
+// RF-11: liberar un regalo apartado (por si alguien se arrepiente y no avisa,
+// o para sacar a alguien que no debía entrar).
+export async function releaseGift(eventId: string, giftId: string) {
+  if (!uuid.safeParse(eventId).success || !uuid.safeParse(giftId).success) return;
+
+  const { supabase } = await requireUser();
+  // RLS: solo puedes liberar apartados de tus eventos.
+  await supabase.from("reservations").delete().eq("gift_id", giftId).eq("event_id", eventId);
+  refresh();
+}
