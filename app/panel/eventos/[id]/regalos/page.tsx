@@ -7,7 +7,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { requireUser } from "@/lib/auth";
 import type { createClient } from "@/lib/supabase/server";
 import { formatearPrecio } from "@/lib/precios";
-import { createGift, deleteGift, moveGift } from "./actions";
+import { createGift, deleteGift, moveGift, releaseGift } from "./actions";
 import { GiftForm } from "./gift-form";
 
 export const metadata: Metadata = { title: "Regalos · WishListStudio" };
@@ -134,6 +134,20 @@ async function Gifts({ params }: { params: Promise<{ id: string }> }) {
                     <Link href={`/panel/eventos/${id}/regalos/${gift.id}`} className={smallButton}>
                       Editar
                     </Link>
+                    {reserved && (
+                      <form action={releaseGift.bind(null, id, gift.id)}>
+                        <ConfirmButton
+                          question={
+                            `¿Liberar "${gift.name}"?\n\n` +
+                            "Quedará disponible para que otra persona lo aparte. " +
+                            "Si ya generaste un código nuevo y quien lo apartó no confirmó asistencia, perderá el acceso."
+                          }
+                          className={smallButton}
+                        >
+                          Liberar
+                        </ConfirmButton>
+                      </form>
+                    )}
                     <form action={deleteGift.bind(null, id, gift.id)}>
                       <ConfirmButton
                         question={
