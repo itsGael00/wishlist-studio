@@ -142,3 +142,39 @@ export function enterWithCode(inviteToken: string, code: string, ip: string, gue
     p_guest_token: guestToken,
   });
 }
+
+export type ActionResult = {
+  status: "ok" | "no_access" | "invalid" | "invalid_companions" | "not_found" | "taken" | "limit";
+};
+
+export function reserveGift(inviteToken: string, guestToken: string, giftId: string, name: string) {
+  return rpc<ActionResult>("guest_reserve", {
+    p_invite_token: inviteToken,
+    p_guest_token: guestToken,
+    p_gift_id: giftId,
+    p_guest_name: name,
+  });
+}
+
+export function cancelReservation(inviteToken: string, guestToken: string, giftId: string) {
+  return rpc<ActionResult>("guest_cancel", {
+    p_invite_token: inviteToken,
+    p_guest_token: guestToken,
+    p_gift_id: giftId,
+  });
+}
+
+export function saveRsvp(
+  inviteToken: string,
+  guestToken: string,
+  rsvp: { name: string; status: GuestRsvp["status"]; companions: number; note: string | null },
+) {
+  return rpc<ActionResult>("guest_rsvp", {
+    p_invite_token: inviteToken,
+    p_guest_token: guestToken,
+    p_guest_name: rsvp.name,
+    p_status: rsvp.status,
+    p_companions: rsvp.companions,
+    p_note: rsvp.note,
+  });
+}
