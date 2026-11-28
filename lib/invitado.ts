@@ -131,7 +131,7 @@ export function loadGuestPage(inviteToken: string, guestToken: string) {
 }
 
 export type EnterResult =
-  | { status: "ok" | "not_found" | "blocked" | "error" }
+  | { status: "ok" | "not_found" | "blocked" | "too_fast" | "error" }
   | { status: "wrong"; remaining: number };
 
 export function enterWithCode(inviteToken: string, code: string, ip: string, guestToken: string) {
@@ -144,15 +144,30 @@ export function enterWithCode(inviteToken: string, code: string, ip: string, gue
 }
 
 export type ActionResult = {
-  status: "ok" | "no_access" | "invalid" | "invalid_companions" | "not_found" | "taken" | "limit";
+  status:
+    | "ok"
+    | "no_access"
+    | "invalid"
+    | "invalid_companions"
+    | "not_found"
+    | "taken"
+    | "limit"
+    | "too_fast"; // límite de velocidad por IP (migración 0005)
 };
 
-export function reserveGift(inviteToken: string, guestToken: string, giftId: string, name: string) {
+export function reserveGift(
+  inviteToken: string,
+  guestToken: string,
+  giftId: string,
+  name: string,
+  ip: string,
+) {
   return rpc<ActionResult>("guest_reserve", {
     p_invite_token: inviteToken,
     p_guest_token: guestToken,
     p_gift_id: giftId,
     p_guest_name: name,
+    p_ip: ip,
   });
 }
 
@@ -168,6 +183,7 @@ export function saveRsvp(
   inviteToken: string,
   guestToken: string,
   rsvp: { name: string; status: GuestRsvp["status"]; companions: number; note: string | null },
+  ip: string,
 ) {
   return rpc<ActionResult>("guest_rsvp", {
     p_invite_token: inviteToken,
@@ -176,5 +192,6 @@ export function saveRsvp(
     p_status: rsvp.status,
     p_companions: rsvp.companions,
     p_note: rsvp.note,
+    p_ip: ip,
   });
 }
