@@ -24,6 +24,7 @@ const MESSAGES: Record<Exclude<ActionResult["status"], "ok">, string> = {
   not_found: "Ese regalo ya no está en la lista. Recarga la página.",
   taken: "¡Uy! Alguien lo apartó hace un momento. Elige otro 🙂",
   limit: "Ya apartaste 5 regalos, el máximo por persona.",
+  too_fast: "Vas muy rápido 😅 Espera unos minutos y vuelve a intentar.",
 };
 
 const guestName = z
@@ -67,6 +68,8 @@ export async function submitAccessCode(
         };
       case "blocked":
         return { error: "Demasiados intentos. Espera 15 minutos y vuelve a intentar." };
+      case "too_fast":
+        return { error: "Se abrieron demasiadas sesiones desde tu red. Espera un rato e intenta de nuevo." };
       case "not_found":
         return { error: "Este link no es válido. Pídele el link a quien te invitó." };
       default:
@@ -93,7 +96,13 @@ export async function reserve(
   if (!name.success) return { error: name.error.issues[0].message };
 
   try {
-    const result = await reserveGift(inviteToken, await readGuestToken(), giftId, name.data);
+    const result = await reserveGift(
+      inviteToken,
+      await readGuestToken(),
+      giftId,
+      name.data,
+      await clientIp(),
+    );
     if (result.status !== "ok") {
       // Si alguien le ganó, refrescamos para que vea el regalo como apartado.
       if (result.status === "taken" || result.status === "not_found") refresh();
@@ -155,7 +164,7 @@ export async function submitRsvp(
 
   try {
     // Las reglas de acompañantes (RN-07) las revisa la base de datos.
-    const result = await saveRsvp(inviteToken, await readGuestToken(), parsed.data);
+    const result = await saveRsvp(inviteToken, await readGuestToken(), parsed.data, await clientIp());
     if (result.status !== "ok") return { error: MESSAGES[result.status] };
     refresh();
     return {

@@ -1,0 +1,20 @@
+# Dependabot revisa cada semana si hay versiones nuevas de las librerías
+# (npm) y de las acciones de GitHub, y abre un PR por cada actualización.
+# Tú decides si lo mergeas: el CI corre igual que con tus PRs.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Agrupa las actualizaciones menores en un solo PR para no llenarte de PRs.
+    groups:
+      menores:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
