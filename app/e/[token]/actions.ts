@@ -11,6 +11,7 @@ import {
   readGuestToken,
   reserveGift,
   saveRsvp,
+  suggestGift,
   type ActionResult,
 } from "@/lib/invitado";
 
@@ -25,6 +26,9 @@ const MESSAGES: Record<Exclude<ActionResult["status"], "ok">, string> = {
   taken: "¡Uy! Alguien lo apartó hace un momento. Elige otro 🙂",
   limit: "Ya apartaste 5 regalos, el máximo por persona.",
   too_fast: "Vas muy rápido 😅 Espera unos minutos y vuelve a intentar.",
+  disabled: "Las sugerencias de regalo están desactivadas para este evento.",
+  out_of_range: "El precio debe estar dentro del rango que puso el anfitrión.",
+  suggest_limit: "Ya sugeriste 3 regalos, el máximo por persona.",
 };
 
 const guestName = z
@@ -175,6 +179,61 @@ export async function submitRsvp(
             ? "¡Confirmado! Te esperamos 🎉"
             : "Gracias. Puedes cambiar tu respuesta cuando quieras.",
     };
+  } catch {
+    return { error: "Algo salió mal. Intenta de nuevo en un momento." };
+  }
+}
+
+// ---------------------------------------------------------------------
+// 5. Sugerir un regalo (RF-25). Queda apartado por quien lo sugiere.
+//    El rango de precio lo revisa la base de datos (RN-02).
+// ---------------------------------------------------------------------
+const suggestSchema = z.object({
+  name: guestName,
+  giftName: z
+    .string()
+    .trim()
+    .min(1, "Escribe qué regalo quieres llevar.")
+    .max(120, "Regalo: máximo 120 caracteres."),
+  // "1,299.50" o "$1299.5" → 1299.5. Aquí el precio es obligatorio.
+  price: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/[$,\s]/g, ""))
+    .refine((v) => /^\d{1,9}(\.\d{1,2})?$/.test(v), "Escribe el precio aproximado (ejemplo: 450).")
+    .transform(Number),
+  description: z
+    .string()
+    .trim()
+    .max(300, "Detalles: máximo 300 caracteres.")
+    .transform((v) => (v === "" ? null : v)),
+});
+
+export async function submitSuggestion(
+  inviteToken: string,
+  _prev: GuestFormState,
+  formData: FormData,
+): Promise<GuestFormState> {
+  if (!isInviteToken(inviteToken)) return { error: "Este link no es válido." };
+
+  const parsed = suggestSchema.safeParse({
+    name: formData.get("name") ?? "",
+    giftName: formData.get("gift_name") ?? "",
+    price: formData.get("price") ?? "",
+    description: formData.get("description") ?? "",
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  try {
+    const result = await suggestGift(
+      inviteToken,
+      await readGuestToken(),
+      parsed.data,
+      await clientIp(),
+    );
+    if (result.status !== "ok") return { error: MESSAGES[result.status] };
+    refresh();
+    return { message: `¡Listo! Agregamos "${parsed.data.giftName}" y quedó apartado a tu nombre 🎉` };
   } catch {
     return { error: "Algo salió mal. Intenta de nuevo en un momento." };
   }

@@ -7,7 +7,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { requireUser } from "@/lib/auth";
 import type { createClient } from "@/lib/supabase/server";
 import { formatearPrecio } from "@/lib/precios";
-import { createGift, deleteGift, moveGift, releaseGift } from "./actions";
+import { createGift, deleteGift, moveGift, releaseGift, setGiftHidden } from "./actions";
 import { GiftForm } from "./gift-form";
 
 export const metadata: Metadata = { title: "Regalos · WishListStudio" };
@@ -72,11 +72,29 @@ async function Gifts({ params }: { params: Promise<{ id: string }> }) {
               return (
                 <li
                   key={gift.id}
-                  className="flex flex-col gap-2 rounded-lg border border-gray-200 p-4 dark:border-gray-800"
+                  className={`flex flex-col gap-2 rounded-lg border p-4 ${
+                    gift.is_hidden
+                      ? "border-dashed border-gray-300 opacity-70 dark:border-gray-700"
+                      : "border-gray-200 dark:border-gray-800"
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-semibold break-words">{gift.name}</p>
+                      {(gift.source === "guest_suggestion" || gift.is_hidden) && (
+                        <p className="flex flex-wrap gap-2 text-xs">
+                          {gift.source === "guest_suggestion" && (
+                            <span className="rounded bg-purple-100 px-1.5 py-0.5 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                              ✨ Sugerido por un invitado
+                            </span>
+                          )}
+                          {gift.is_hidden && (
+                            <span className="rounded bg-gray-200 px-1.5 py-0.5 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                              Oculto para los invitados
+                            </span>
+                          )}
+                        </p>
+                      )}
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         {gift.price_estimate !== null
                           ? formatearPrecio(gift.price_estimate)
@@ -134,6 +152,11 @@ async function Gifts({ params }: { params: Promise<{ id: string }> }) {
                     <Link href={`/panel/eventos/${id}/regalos/${gift.id}`} className={smallButton}>
                       Editar
                     </Link>
+                    <form action={setGiftHidden.bind(null, id, gift.id, !gift.is_hidden)}>
+                      <button type="submit" className={smallButton}>
+                        {gift.is_hidden ? "Mostrar" : "Ocultar"}
+                      </button>
+                    </form>
                     {reserved && (
                       <form action={releaseGift.bind(null, id, gift.id)}>
                         <ConfirmButton
