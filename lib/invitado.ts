@@ -92,6 +92,7 @@ export type GuestGift = {
   store_url: string | null;
   reserved: boolean;
   mine: boolean; // true = lo apartó ESTE invitado
+  suggested: boolean; // true = lo sugirió un invitado (RF-25)
 };
 
 export type GuestRsvp = {
@@ -117,10 +118,14 @@ export type GuestPage =
         allow_companions: boolean;
         max_companions: number | null;
         welcome_message: string | null;
+        allow_suggestions: boolean;
+        suggestion_min_price: number | null;
+        suggestion_max_price: number | null;
       };
       gifts: GuestGift[];
       my_rsvp: GuestRsvp | null;
       my_name: string | null;
+      my_suggestions: number; // cuántos regalos ha sugerido este invitado (máx. 3)
     };
 
 export function loadGuestPage(inviteToken: string, guestToken: string) {
@@ -152,7 +157,10 @@ export type ActionResult = {
     | "not_found"
     | "taken"
     | "limit"
-    | "too_fast"; // límite de velocidad por IP (migración 0005)
+    | "too_fast" // límite de velocidad por IP (migración 0005)
+    | "disabled" // sugerencias apagadas (migración 0006)
+    | "out_of_range" // precio fuera del rango
+    | "suggest_limit"; // ya sugirió 3 regalos
 };
 
 export function reserveGift(
@@ -192,6 +200,23 @@ export function saveRsvp(
     p_status: rsvp.status,
     p_companions: rsvp.companions,
     p_note: rsvp.note,
+    p_ip: ip,
+  });
+}
+
+export function suggestGift(
+  inviteToken: string,
+  guestToken: string,
+  suggestion: { name: string; giftName: string; price: number; description: string | null },
+  ip: string,
+) {
+  return rpc<ActionResult>("guest_suggest", {
+    p_invite_token: inviteToken,
+    p_guest_token: guestToken,
+    p_guest_name: suggestion.name,
+    p_gift_name: suggestion.giftName,
+    p_price: suggestion.price,
+    p_description: suggestion.description,
     p_ip: ip,
   });
 }

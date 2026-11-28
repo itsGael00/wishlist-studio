@@ -163,3 +163,15 @@ export async function releaseGift(eventId: string, giftId: string) {
   await supabase.from("reservations").delete().eq("gift_id", giftId).eq("event_id", eventId);
   refresh();
 }
+
+// RF-10: ocultar o volver a mostrar un regalo (sirve sobre todo para las
+// sugerencias de invitados que no te gusten). Oculto = los invitados no lo
+// ven, pero no se borra: si estaba apartado, el apartado se conserva.
+export async function setGiftHidden(eventId: string, giftId: string, hidden: boolean) {
+  if (!uuid.safeParse(eventId).success || !uuid.safeParse(giftId).success) return;
+
+  const { supabase } = await requireUser();
+  // RLS: solo puedes cambiar regalos de tus eventos.
+  await supabase.from("gifts").update({ is_hidden: hidden }).eq("id", giftId).eq("event_id", eventId);
+  refresh();
+}

@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { formatearFecha } from "@/lib/fechas";
 import { isInviteToken, loadGuestPage, readGuestToken } from "@/lib/invitado";
-import { cancel, reserve, submitAccessCode, submitRsvp } from "./actions";
+import { cancel, reserve, submitAccessCode, submitRsvp, submitSuggestion } from "./actions";
 import { CodeForm } from "./code-form";
 import { GiftCard } from "./gift-card";
 import { RsvpForm } from "./rsvp-form";
+import { SuggestForm } from "./suggest-form";
 
 // El título NO lleva el nombre del evento: sin código no se revela nada
 // (RN-06b), ni siquiera en la pestaña o en la vista previa de WhatsApp.
@@ -108,6 +109,17 @@ async function Guest({ params }: { params: Promise<{ token: string }> }) {
             ))}
           </ul>
         )}
+        {settings.allow_suggestions &&
+          settings.suggestion_min_price !== null &&
+          settings.suggestion_max_price !== null && (
+            <SuggestForm
+              action={submitSuggestion.bind(null, token)}
+              defaultName={defaultName}
+              minPrice={Number(settings.suggestion_min_price)}
+              maxPrice={Number(settings.suggestion_max_price)}
+              remaining={Math.max(0, 3 - page.my_suggestions)}
+            />
+          )}
       </section>
     </>
   );

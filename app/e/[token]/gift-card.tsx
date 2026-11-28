@@ -44,6 +44,9 @@ export function GiftCard({
               Aprox. {formatearPrecio(gift.price_estimate)}
             </p>
           )}
+          {gift.suggested && (
+            <p className="text-xs text-gray-500">✨ Sugerido por un invitado</p>
+          )}
         </div>
         <span
           className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${
